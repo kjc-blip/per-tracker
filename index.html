@@ -392,10 +392,11 @@ function doPost(e) {
         <div class="field"><label>On-site hrs</label><input type="number" id="e-onsite" min="0" step="0.25" placeholder="0.0" inputmode="decimal"></div>
         <div class="field"><label>Drive time hrs</label><input type="number" id="e-drive" min="0" step="0.25" placeholder="0.0" inputmode="decimal"></div>
       </div>
-      <div class="row2">
-        <div class="field"><label>Drive distance ($)</label><input type="number" id="e-mileage" min="0" step="0.01" placeholder="0.00" inputmode="decimal"></div>
-        <div class="field"><label>Technician</label><select id="e-tech"><option>John</option><option>Adrian</option><option>Assistant</option></select></div>
+      <div class="field">
+        <label>Drive distance ($) <span onclick="openDistanceSheet()" style="color:var(--blue2);font-size:0.7rem;cursor:pointer;text-decoration:underline;margin-left:6px">&#127758; Calculate by address</span></label>
+        <input type="number" id="e-mileage" min="0" step="0.01" placeholder="0.00" inputmode="decimal">
       </div>
+      <div class="field"><label>Technician</label><select id="e-tech"><option>John</option><option>Adrian</option><option>Assistant</option></select></div>
       <div class="field"><label>Note (optional)</label><input type="text" id="e-labour-note" placeholder="e.g. Diagnosing hydraulic issue"></div>
       <button class="btn btn-red" onclick="submitEntry('labour')">+ Add hours</button>
     </div>
@@ -403,14 +404,23 @@ function doPost(e) {
     <div class="tab-panel" id="ep-part">
       <div class="field"><label>Part description</label><input type="text" id="e-part-desc" placeholder="e.g. Hydraulic pump seal kit"></div>
       <div class="row2">
-        <div class="field"><label>Store / supplier</label><input type="text" id="e-part-store" placeholder="NAPA..."></div>
+        <div class="field">
+          <label>Store / supplier <span onclick="openSheet('sheet-stores')" style="color:var(--blue2);font-size:0.7rem;cursor:pointer;text-decoration:underline;margin-left:6px">&#9881; Manage stores</span></label>
+          <select id="e-part-store" onchange="onStoreChange()">
+            <option value="">— select store —</option>
+          </select>
+        </div>
         <div class="field"><label>Part number</label><input type="text" id="e-part-num" placeholder="optional"></div>
+      </div>
+      <div class="field" id="e-acct-wrap" style="display:none">
+        <label>PER account # (auto-filled)</label>
+        <input type="text" id="e-part-acct" placeholder="account number" readonly style="color:var(--blue2)">
       </div>
       <div class="row2">
         <div class="field"><label>Cost ($)</label><input type="number" id="e-part-cost" min="0" step="0.01" placeholder="0.00" inputmode="decimal" oninput="updateMarkupPreview()"></div>
         <div class="field"><label>Markup / billed</label><div id="markup-preview" style="padding:11px 12px;background:var(--bg3);border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:1rem;color:var(--blue2);border:1px solid var(--border2)">—</div></div>
       </div>
-      <div class="field"><label>Purchased by</label><select id="e-part-by"><option value="PER">P.E.R. (us)</option><option value="owner">Owner</option></select></div>
+      <div class="field"><label>Purchased by</label><select id="e-part-by" onchange="onPartByChange()"><option value="PER">P.E.R. (us)</option><option value="owner">Owner</option></select></div>
       <button class="btn btn-red" onclick="submitEntry('part')">+ Add part</button>
     </div>
 
@@ -515,6 +525,47 @@ function doPost(e) {
   </div>
 </div>
 
+
+<!-- STORES SHEET -->
+<div class="sheet-bg" id="sheet-stores">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Parts stores</div>
+    <div id="stores-list" style="margin-bottom:14px"></div>
+    <hr style="border:none;border-top:1px solid var(--border);margin:0 0 14px">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;margin-bottom:10px;color:var(--text)">Add store</div>
+    <div class="row2">
+      <div class="field"><label>Store name</label><input type="text" id="ns-name" placeholder="NAPA, Fastenal..."></div>
+      <div class="field"><label>PER account #</label><input type="text" id="ns-acct" placeholder="optional"></div>
+    </div>
+    <div class="field"><label>Notes</label><input type="text" id="ns-notes" placeholder="e.g. Dixon location"></div>
+    <button class="btn btn-red" onclick="addStore()">+ Add store</button>
+    <button class="btn btn-ghost" style="margin-top:8px" onclick="closeSheet('sheet-stores')">Done</button>
+  </div>
+</div>
+
+<!-- DISTANCE SHEET -->
+<div class="sheet-bg" id="sheet-distance">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Calculate drive distance</div>
+    <div class="callout" style="margin-bottom:14px">Enter the job site address. Distance is calculated from Birds Landing, CA (home base at 6498 Birds Landing Rd).</div>
+    <div class="field"><label>Job site address</label><input type="text" id="dist-address" placeholder="e.g. 7645 Mumma Rd, Arbuckle, CA" inputmode="text"></div>
+    <div class="field"><label>Mileage rate ($/mile)</label><input type="number" id="dist-rate" value="0.67" step="0.01" inputmode="decimal"></div>
+    <div id="dist-result" style="display:none;background:var(--bg3);border-radius:10px;padding:14px;margin:10px 0;text-align:center">
+      <div style="font-size:0.78rem;color:var(--text2);margin-bottom:4px">Round trip distance charge</div>
+      <div id="dist-miles" style="font-family:'Barlow Condensed',sans-serif;font-size:2rem;font-weight:700;color:var(--red)">—</div>
+      <div id="dist-charge" style="font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;color:var(--text2);margin-top:2px">—</div>
+    </div>
+    <div id="dist-error" style="display:none;color:var(--red);font-size:0.85rem;margin:8px 0"></div>
+    <div class="btn-row">
+      <button class="btn btn-blue" style="flex:1" onclick="calcDistance()">Calculate</button>
+      <button class="btn btn-red" style="flex:1" id="dist-use-btn" style="display:none" onclick="useDistance()">Use this charge</button>
+    </div>
+    <button class="btn btn-ghost" style="margin-top:8px" onclick="closeSheet('sheet-distance')">Cancel</button>
+  </div>
+</div>
+
 <!-- PHOTO LIGHTBOX -->
 <div class="sheet-bg" id="sheet-photo" onclick="closeSheet('sheet-photo')">
   <img id="lightbox-img" style="max-width:95vw;max-height:85vh;border-radius:12px;object-fit:contain;margin:auto">
@@ -587,6 +638,18 @@ function loadLocal(){
   if(c)SETTINGS=JSON.parse(c);
   if(!STATE.customers||!STATE.customers.length){
     STATE.customers=SEED.map(x=>({...x,id:uid()}));saveLocal();
+  }
+  if(!STATE.stores){
+    STATE.stores=[
+      {id:uid(),name:'NAPA Auto Parts',acct:'',notes:'Dixon location'},
+      {id:uid(),name:'Fastenal',acct:'',notes:''},
+      {id:uid(),name:'John Deere Dealer',acct:'',notes:''},
+      {id:uid(),name:'O'Reilly Auto Parts',acct:'',notes:''},
+      {id:uid(),name:'Tractor Supply Co',acct:'',notes:''},
+      {id:uid(),name:'Welders Supply',acct:'',notes:''},
+      {id:uid(),name:'Hydraulic shop',acct:'',notes:''}
+    ];
+    saveLocal();
   }
 }
 function getCust(id){return STATE.customers.find(c=>c.id===id)}
@@ -768,7 +831,7 @@ function renderJobDetail(){
       html+=`<div class="log-row">
         <div class="log-row-left">
           <div class="log-row-title">${esc(x.desc||'Part')}</div>
-          <div class="log-row-sub">${esc(x.store||'')}${x.partNum?' · '+esc(x.partNum):''} · cost ${fmt(c)} · ${markupTier(c)} markup · ${x.by==='PER'?'P.E.R.':'Owner'}</div>
+          <div class="log-row-sub">${(()=>{const st=STATE.stores&&STATE.stores.find(s=>s.id===x.storeId);const sn=st?st.name:(x.storeName||x.store||'');const sa=st&&st.acct?(' Acct:'+st.acct):(x.storeAcct?(' Acct:'+x.storeAcct):'');return esc(sn)+esc(sa);})()}${x.partNum?' · '+esc(x.partNum):''} · cost ${fmt(c)} · ${markupTier(c)} · ${x.by==='PER'?'P.E.R.':'Owner'}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           <div class="log-row-val">${fmt(b)}</div>
@@ -832,7 +895,7 @@ function renderJobDetail(){
 
   // Actions
   html+=`<div class="btn-row" style="margin-top:8px">
-    <button class="btn btn-blue" style="flex:1" onclick="generateReportPrompt('${job.id}')">Copy report data</button>
+    <button class="btn btn-blue" style="flex:1" onclick="exportDocx('${job.id}')">&#8595; Export Word report</button>
     <button class="btn btn-danger btn-sm" onclick="deleteJob('${job.id}')">Delete</button>
   </div>`;
 
@@ -904,7 +967,11 @@ function renderSettings(){
 }
 
 // ── SHEETS ──
-function openSheet(id){document.getElementById(id).classList.add('open')}
+function openSheet(id){
+  document.getElementById(id).classList.add('open');
+  if(id==='sheet-stores')renderStoresList();
+  if(id==='sheet-entry'){populateStoreDropdown();}
+}
 function closeSheet(id){document.getElementById(id).classList.remove('open')}
 
 // ── JOB SHEET ──
@@ -1071,8 +1138,12 @@ function submitEntry(type){
     const cost=parseFloat(document.getElementById('e-part-cost').value)||0;
     const desc=document.getElementById('e-part-desc').value.trim();
     if(!desc&&!cost){toast('Enter description or cost');return;}
-    entry={...entry,desc,cost,store:document.getElementById('e-part-store').value,partNum:document.getElementById('e-part-num').value,by:document.getElementById('e-part-by').value};
-    document.getElementById('e-part-desc').value='';document.getElementById('e-part-cost').value='';document.getElementById('markup-preview').textContent='—';
+    const storeSelVal=document.getElementById('e-part-store').value;
+    const storeObj=STATE.stores&&STATE.stores.find(s=>s.id===storeSelVal);
+    const storeName=storeObj?storeObj.name:(storeSelVal==='__other__'?'Other':'');
+    const storeAcct=storeObj?storeObj.acct:'';
+    entry={...entry,desc,cost,storeId:storeSelVal,storeName,storeAcct,partNum:document.getElementById('e-part-num').value,by:document.getElementById('e-part-by').value};
+    document.getElementById('e-part-desc').value='';document.getElementById('e-part-cost').value='';document.getElementById('e-part-num').value='';document.getElementById('e-acct-wrap').style.display='none';document.getElementById('markup-preview').textContent='—';
   }else if(type==='consumable'){
     const sel=document.getElementById('e-cons-item');
     const name=sel.value==='__custom__'?document.getElementById('e-cons-custom').value:sel.value;
@@ -1126,29 +1197,323 @@ function disconnectDrive(){
 function copyScript(){
   navigator.clipboard.writeText(document.getElementById('script-code').textContent).then(()=>toast('Script copied'));
 }
-function generateReportPrompt(jobId){
+// ── STORES ──
+function renderStoresList(){
+  const el=document.getElementById('stores-list');
+  if(!STATE.stores||!STATE.stores.length){el.innerHTML='<div style="color:var(--text3);font-size:0.85rem">No stores yet.</div>';return;}
+  el.innerHTML=STATE.stores.map(s=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem">${esc(s.name)}</div>
+        ${s.acct?`<div style="font-size:0.78rem;color:var(--blue2)">Acct: ${esc(s.acct)}</div>`:''}
+        ${s.notes?`<div style="font-size:0.75rem;color:var(--text3)">${esc(s.notes)}</div>`:''}
+      </div>
+      <button class="btn btn-danger" onclick="deleteStore('${s.id}')">&#x2715;</button>
+    </div>`).join('');
+}
+function addStore(){
+  const name=document.getElementById('ns-name').value.trim();
+  if(!name){toast('Enter a store name');return;}
+  if(!STATE.stores)STATE.stores=[];
+  STATE.stores.push({id:uid(),name,acct:document.getElementById('ns-acct').value.trim(),notes:document.getElementById('ns-notes').value.trim()});
+  document.getElementById('ns-name').value='';
+  document.getElementById('ns-acct').value='';
+  document.getElementById('ns-notes').value='';
+  scheduleSave();renderStoresList();populateStoreDropdown();toast('Store added');
+}
+function deleteStore(id){
+  STATE.stores=STATE.stores.filter(s=>s.id!==id);
+  scheduleSave();renderStoresList();populateStoreDropdown();toast('Store removed');
+}
+function populateStoreDropdown(){
+  const sel=document.getElementById('e-part-store');
+  if(!sel)return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">— select store —</option>'+
+    (STATE.stores||[]).map(s=>`<option value="${esc(s.id)}"${s.id===cur?' selected':''}>${esc(s.name)}${s.acct?' (Acct: '+esc(s.acct)+')':''}</option>`).join('')+
+    '<option value="__other__">Other / type in</option>';
+}
+function onStoreChange(){
+  const sel=document.getElementById('e-part-store');
+  const store=STATE.stores&&STATE.stores.find(s=>s.id===sel.value);
+  const acctWrap=document.getElementById('e-acct-wrap');
+  const acctInput=document.getElementById('e-part-acct');
+  if(store&&store.acct){
+    acctWrap.style.display='block';
+    acctInput.value=store.acct;
+  } else {
+    acctWrap.style.display='none';
+    acctInput.value='';
+  }
+}
+function onPartByChange(){
+  const by=document.getElementById('e-part-by').value;
+  const acctWrap=document.getElementById('e-acct-wrap');
+  if(by==='owner'){acctWrap.style.display='none';}
+  else onStoreChange();
+}
+function openDistanceSheet(){
+  document.getElementById('dist-result').style.display='none';
+  document.getElementById('dist-error').style.display='none';
+  document.getElementById('dist-use-btn').style.display='none';
+  openSheet('sheet-distance');
+}
+function calcDistance(){
+  const addr=document.getElementById('dist-address').value.trim();
+  if(!addr){toast('Enter a job site address');return;}
+  const rate=parseFloat(document.getElementById('dist-rate').value)||0.67;
+  const origin=encodeURIComponent('6498 Birds Landing Rd, Birds Landing, CA 94512');
+  const dest=encodeURIComponent(addr);
+  const errEl=document.getElementById('dist-error');
+  const resEl=document.getElementById('dist-result');
+  const useBtn=document.getElementById('dist-use-btn');
+  errEl.style.display='none';
+  resEl.style.display='none';
+  // Use Google Maps Distance Matrix API via public URL trick
+  // Since we can't use API keys on client, use the nominatim geocoder + haversine
+  toast('Calculating...');
+  const geocodeUrl=`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${dest}`;
+  fetch(geocodeUrl,{headers:{'User-Agent':'PER-Tracker/1.0'}})
+    .then(r=>r.json())
+    .then(data=>{
+      if(!data||!data.length)throw new Error('Address not found — try a more specific address');
+      const lat2=parseFloat(data[0].lat);
+      const lon2=parseFloat(data[0].lon);
+      // Home base coords: Birds Landing CA
+      const lat1=38.1085, lon1=-121.8934;
+      // Haversine formula
+      const R=3958.8; // miles
+      const dLat=(lat2-lat1)*Math.PI/180;
+      const dLon=(lon2-lon1)*Math.PI/180;
+      const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+      const dist=R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+      const roundTrip=dist*2;
+      const charge=roundTrip*rate;
+      document.getElementById('dist-miles').textContent=roundTrip.toFixed(1)+' miles round trip';
+      document.getElementById('dist-charge').textContent='Charge: '+fmt(charge)+' @ '+fmt(rate)+'/mi';
+      resEl.style.display='block';
+      useBtn.style.display='block';
+      useBtn.dataset.charge=charge.toFixed(2);
+      toast('Distance calculated');
+    })
+    .catch(e=>{errEl.textContent=e.message||'Could not calculate — check address and try again';errEl.style.display='block';});
+}
+function useDistance(){
+  const charge=document.getElementById('dist-use-btn').dataset.charge;
+  const el=document.getElementById('e-mileage');
+  if(el)el.value=parseFloat(charge).toFixed(2);
+  closeSheet('sheet-distance');
+  toast('Distance charge applied');
+}
+
+// ── DOCX EXPORT ──
+function exportDocx(jobId){
   const job=getJob(jobId);if(!job)return;
-  const t=jobTotals(job);const cust=getCust(job.customerId);
+  const t=jobTotals(job);
+  const cust=getCust(job.customerId);
   const labour=job.entries.filter(e=>e.type==='labour');
   const parts=job.entries.filter(e=>e.type==='part');
   const cons=job.entries.filter(e=>e.type==='consumable');
   const notes=job.entries.filter(e=>e.type==='note');
-  const txt=`Generate a professional Word service report for Patriot Equipment Repair (6498 Birds Landing Rd, Birds Landing, Ca 94512):
 
-CUSTOMER: ${job.customerName}${cust?'\nContact: '+cust.contact+' | Phone: '+cust.phone:''}
-EQUIPMENT: ${[job.year,job.make,job.model].filter(Boolean).join(' ')} | S/N: ${job.sn||'N/A'}
-DATES: ${job.startDate||'N/A'} | RATE: $${job.rate||135}/hr
-COMPLAINT: ${job.complaint||'Not specified'}
+  // Build HTML that mimics the Excel worksheet layout, then convert to .doc
+  // We use the HTML→blob→download trick which Word opens natively
+  const rate=job.rate||135;
+  const finishDate=job.status==='complete'?(job.finishDate||''):'In Progress';
 
-NOTES:\n${notes.map(n=>`[${n.cat}${n.code?' '+n.code:''}] ${n.text}`).join('\n')||'None'}
-LABOUR:\n${labour.map(e=>`${e.date} ${e.tech}: ${e.onsite}h on-site, ${e.drive}h drive, $${e.mileage} mi. ${e.note||''}`).join('\n')||'None'}
-PARTS:\n${parts.map(e=>{const c=parseFloat(e.cost)||0;return`${e.desc} (${e.store||'?'}) cost $${c.toFixed(2)} billed $${(c*(1+getMarkup(c))).toFixed(2)}`}).join('\n')||'None'}
-CONSUMABLES:\n${cons.map(e=>`${e.name} x${e.qty} @ $${e.price} = $${((e.price||0)*(e.qty||1)*1.25).toFixed(2)} billed`).join('\n')||'None'}
+  const labourRows=labour.map(e=>{
+    const hrs=(parseFloat(e.onsite||0)+parseFloat(e.drive||0));
+    const total=hrs*rate+(parseFloat(e.mileage)||0);
+    return`<tr>
+      <td>${e.date||''}</td><td>${e.tech||'John'}</td>
+      <td>${parseFloat(e.onsite||0).toFixed(2)}</td>
+      <td>${parseFloat(e.drive||0).toFixed(2)}</td>
+      <td>$${parseFloat(e.mileage||0).toFixed(2)}</td>
+      <td>${e.note||''}</td>
+      <td><b>$${total.toFixed(2)}</b></td>
+    </tr>`;
+  }).join('');
 
-TOTAL: Labour $${t.labour.toFixed(2)} | Parts $${t.parts.toFixed(2)} | Cons $${t.cons.toFixed(2)} | TOTAL $${t.total.toFixed(2)}
+  const partRows=parts.map(e=>{
+    const c=parseFloat(e.cost)||0;
+    const b=c*(1+getMarkup(c));
+    const store=STATE.stores&&STATE.stores.find(s=>s.id===e.storeId);
+    const storeName=store?store.name:(e.storeName||e.store||'');
+    const acct=store&&store.acct?store.acct:(e.storeAcct||'');
+    return`<tr>
+      <td>${esc(e.desc||'')}</td>
+      <td>${esc(storeName)}</td>
+      <td>${acct?'Acct: '+esc(acct):''}</td>
+      <td>${esc(e.partNum||'')}</td>
+      <td>$${c.toFixed(2)}</td>
+      <td>${markupTier(c)}</td>
+      <td><b>$${b.toFixed(2)}</b></td>
+      <td>${e.by==='PER'?'P.E.R.':'Owner'}</td>
+    </tr>`;
+  }).join('');
 
-Please produce a polished .docx report with company header and cost summary table. Footer: "Please remit payment to: Patriot Equipment Repair, 6498 Birds Landing Rd, Birds Landing, Ca 94512"`;
-  navigator.clipboard.writeText(txt).then(()=>toast('Report data copied!'));
+  const consRows=cons.map(e=>{
+    const cost=(parseFloat(e.price)||0)*(parseFloat(e.qty)||1);
+    return`<tr>
+      <td>${esc(e.name||'')}</td><td>$${parseFloat(e.price||0).toFixed(2)}</td>
+      <td>${e.qty||1}</td><td>$${cost.toFixed(2)}</td>
+      <td><b>$${(cost*1.25).toFixed(2)}</b></td>
+    </tr>`;
+  }).join('');
+
+  const noteRows=notes.map(e=>{
+    const catLabels={finding:'Finding',error:'Error Code',work:'Work Performed',before:'Before',after:'After',general:'Note'};
+    return`<tr><td>${catLabels[e.cat]||'Note'}${e.code?' — '+esc(e.code):''}</td><td>${esc(e.text||'')}</td></tr>`;
+  }).join('');
+
+  const totalOnsite=labour.reduce((s,e)=>s+(parseFloat(e.onsite)||0),0);
+  const totalDrive=labour.reduce((s,e)=>s+(parseFloat(e.drive)||0),0);
+  const totalMileage=labour.reduce((s,e)=>s+(parseFloat(e.mileage)||0),0);
+
+  const doc=`
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8">
+<style>
+  body{font-family:Arial,sans-serif;font-size:10pt;margin:0;padding:0}
+  .page{width:7.5in;margin:0.5in auto;padding:0}
+  h1{font-size:22pt;font-weight:bold;color:#e8191a;margin:0;letter-spacing:2px}
+  h2{font-size:11pt;color:#2240e8;margin:0;font-weight:bold;letter-spacing:1px}
+  .header-bar{background:#e8191a;padding:12px 18px;color:white}
+  .header-bar h1{color:white;font-size:20pt}
+  .header-bar .sub{font-size:9pt;color:rgba(255,255,255,0.85);margin-top:2px}
+  .remit{text-align:right;font-size:8pt;color:#666;padding:4px 0}
+  .info-table{width:100%;border-collapse:collapse;margin:8px 0}
+  .info-table td{padding:4px 8px;font-size:9.5pt;vertical-align:top}
+  .info-table .label{font-weight:bold;color:#555;width:90px;font-size:8.5pt;text-transform:uppercase}
+  .section{margin:12px 0 4px;font-size:8pt;font-weight:bold;text-transform:uppercase;letter-spacing:1px;color:#2240e8;border-bottom:2px solid #e8191a;padding-bottom:2px}
+  table.data{width:100%;border-collapse:collapse;font-size:8.5pt;margin-bottom:8px}
+  table.data th{background:#0f1420;color:white;padding:5px 6px;text-align:left;font-size:7.5pt;text-transform:uppercase;letter-spacing:0.5px}
+  table.data td{padding:4px 6px;border-bottom:1px solid #ddd;vertical-align:top}
+  table.data tr:nth-child(even) td{background:#f7f7f7}
+  .totals-box{background:#0f1420;color:white;padding:10px 14px;margin-top:10px;border-radius:4px}
+  .totals-box table{width:100%;border-collapse:collapse;color:white}
+  .totals-box td{padding:3px 8px;font-size:9pt}
+  .totals-box .grand{font-size:13pt;font-weight:bold;color:#ff9999;border-top:1px solid rgba(255,255,255,0.3);padding-top:6px;margin-top:4px}
+  .footer{margin-top:20px;border-top:3px solid #e8191a;padding-top:8px;display:flex;justify-content:space-between;align-items:flex-end}
+  .footer-addr{font-size:8pt;color:#555;line-height:1.6}
+  .footer-remit{text-align:right;font-size:9pt;font-weight:bold;color:#e8191a}
+  .complaint-box{background:#fff8f8;border-left:3px solid #e8191a;padding:8px 10px;margin:6px 0;font-size:9pt;line-height:1.5}
+  .divider{border:none;border-top:1px solid #ddd;margin:8px 0}
+</style>
+</head>
+<body><div class="page">
+
+<!-- HEADER -->
+<div class="header-bar">
+  <h1>PATRIOT</h1>
+  <div class="sub">EQUIPMENT REPAIR &nbsp;&nbsp;&bull;&nbsp;&nbsp; 6498 Birds Landing Rd, Birds Landing, CA 94512 &nbsp;&nbsp;&bull;&nbsp;&nbsp; 530-379-6332</div>
+</div>
+
+<table class="info-table" style="margin-top:10px">
+  <tr>
+    <td style="width:50%;vertical-align:top">
+      <div style="font-size:8pt;font-weight:bold;text-transform:uppercase;color:#555;margin-bottom:4px">Bill To</div>
+      <div style="font-size:11pt;font-weight:bold">${esc(job.customerName||'')}</div>
+      ${cust?`<div style="font-size:9pt">${esc(cust.contact||'')}</div>
+      <div style="font-size:9pt">${esc(cust.address||'')}${cust.city?', '+esc(cust.city):''}</div>
+      <div style="font-size:9pt">${esc(cust.phone||'')} ${cust.email?'&nbsp;|&nbsp; '+esc(cust.email):''}</div>`:''}
+    </td>
+    <td style="width:50%;vertical-align:top;text-align:right">
+      <div style="font-size:8pt;font-weight:bold;text-transform:uppercase;color:#555;margin-bottom:4px">Service Report</div>
+      <table style="margin-left:auto;font-size:9pt;border-collapse:collapse">
+        <tr><td style="color:#555;padding:2px 8px 2px 0"><b>Start date:</b></td><td>${job.startDate||'—'}</td></tr>
+        <tr><td style="color:#555;padding:2px 8px 2px 0"><b>Finish date:</b></td><td>${finishDate}</td></tr>
+        <tr><td style="color:#555;padding:2px 8px 2px 0"><b>P.O. / Unit #:</b></td><td>${esc(job.po||'—')}</td></tr>
+        <tr><td style="color:#555;padding:2px 8px 2px 0"><b>Hourly rate:</b></td><td>$${rate}/hr</td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<hr class="divider">
+
+<!-- EQUIPMENT -->
+<div class="section">Equipment</div>
+<table class="info-table">
+  <tr>
+    <td><span class="label">Make</span> ${esc(job.make||'—')}</td>
+    <td><span class="label">Model</span> ${esc(job.model||'—')}</td>
+    <td><span class="label">Year</span> ${esc(job.year||'—')}</td>
+    <td><span class="label">S/N</span> ${esc(job.sn||'—')}</td>
+    <td><span class="label">Hours</span> ${esc(job.hours||'—')}</td>
+  </tr>
+</table>
+
+<!-- COMPLAINT -->
+${job.complaint?`<div class="section">Customer complaint</div>
+<div class="complaint-box">${esc(job.complaint)}</div>`:''}
+
+<!-- FINDINGS & NOTES -->
+${notes.length?`<div class="section">Findings &amp; notes</div>
+<table class="data">
+  <thead><tr><th style="width:130px">Category</th><th>Details</th></tr></thead>
+  <tbody>${noteRows}</tbody>
+</table>`:''}
+
+<!-- LABOUR -->
+<div class="section">Labour &mdash; $${rate}/hr</div>
+${labour.length?`<table class="data">
+  <thead><tr><th>Date</th><th>Tech</th><th>On-site hrs</th><th>Drive hrs</th><th>Drive $</th><th>Notes</th><th>Total</th></tr></thead>
+  <tbody>${labourRows}</tbody>
+</table>
+<div style="font-size:8.5pt;color:#555;text-align:right;margin-bottom:4px">
+  Total: ${totalOnsite.toFixed(2)}h on-site &bull; ${totalDrive.toFixed(2)}h drive &bull; $${totalMileage.toFixed(2)} mileage
+</div>`:'<div style="color:#999;font-size:8.5pt;padding:4px">No labour entries.</div>'}
+
+<!-- PARTS -->
+<div class="section">Parts</div>
+${parts.length?`<table class="data">
+  <thead><tr><th>Description</th><th>Store</th><th>Account</th><th>Part #</th><th>Cost</th><th>Markup</th><th>Billed</th><th>By</th></tr></thead>
+  <tbody>${partRows}</tbody>
+</table>`:'<div style="color:#999;font-size:8.5pt;padding:4px">No parts.</div>'}
+
+<!-- CONSUMABLES -->
+<div class="section">Consumables (25% markup)</div>
+${cons.length?`<table class="data">
+  <thead><tr><th>Item</th><th>Unit price</th><th>Qty</th><th>Cost</th><th>Billed</th></tr></thead>
+  <tbody>${consRows}</tbody>
+</table>`:'<div style="color:#999;font-size:8.5pt;padding:4px">No consumables.</div>'}
+
+<!-- TOTALS -->
+<div class="totals-box">
+  <table>
+    <tr><td>Labour</td><td style="text-align:right">$${t.labour.toFixed(2)}</td></tr>
+    <tr><td>Parts</td><td style="text-align:right">$${t.parts.toFixed(2)}</td></tr>
+    <tr><td>Consumables</td><td style="text-align:right">$${t.cons.toFixed(2)}</td></tr>
+    <tr><td colspan="2"><hr style="border-color:rgba(255,255,255,0.2);margin:4px 0"></td></tr>
+    <tr class="grand"><td><b>TOTAL DUE</b></td><td style="text-align:right"><b>$${t.total.toFixed(2)}</b></td></tr>
+  </table>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-addr">
+    Patriot Equipment Repair<br>
+    6498 Birds Landing Rd, Birds Landing, CA 94512<br>
+    Tel: 530-379-6332
+  </div>
+  <div class="footer-remit">
+    PLEASE REMIT PAYMENT TO:<br>
+    Patriot Equipment Repair
+  </div>
+</div>
+
+</div></body></html>`;
+
+  const blob=new Blob([doc],{type:'application/msword'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  const custSlug=(job.customerName||'report').replace(/[^a-z0-9]/gi,'_').toLowerCase();
+  a.download=`PER_${custSlug}_${job.startDate||today()}.doc`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Report downloaded!');
 }
 
 // ── TOAST ──
