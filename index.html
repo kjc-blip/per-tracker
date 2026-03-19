@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PER Tracker">
+<meta name="theme-color" content="#e8191a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>PER Field Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --red:#e8191a;--red2:#ff3b3b;--red-dim:rgba(232,25,26,0.15);
+  --blue:#2240e8;--blue2:#3d5aff;--blue-dim:rgba(34,64,232,0.15);
+  --bg:#0b0c10;--bg2:#111318;--bg3:#181b22;--bg4:#1e2330;
+  --text:#f0f2f5;--text2:#9aa3b2;--text3:#555f72;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.14);
+  --success:#2eb87a;
+  --r:12px;--r-sm:8px;
+  --safe-top:env(safe-area-inset-top);
+  --safe-bot:env(safe-area-inset-bottom);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg)}
+body{font-family:'Barlow',sans-serif;color:var(--text);display:flex;flex-direction:column}
+
+/* ── HEADER ── */
+.header{
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  border-top:3px solid var(--red);
+  padding:calc(var(--safe-top) + 10px) 16px 10px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;z-index:50;
+}
+.header-left{display:flex;align-items:center;gap:10px}
+.logo-icon{width:32px;height:32px;background:var(--red);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-icon svg{width:18px;height:18px}
+.header-title{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:700;letter-spacing:0.04em;line-height:1.1}
+.header-sub{font-size:0.65rem;color:var(--text2);letter-spacing:0.08em;text-transform:uppercase}
+.sync-pill{font-size:0.68rem;font-family:'Barlow Condensed',sans-serif;font-weight:600;padding:3px 9px;border-radius:20px;display:flex;align-items:center;gap:4px;letter-spacing:0.03em}
+.sync-ok{background:rgba(46,184,122,0.15);color:var(--success)}
+.sync-off{background:rgba(255,255,255,0.06);color:var(--text3)}
+.sync-busy{background:var(--blue-dim);color:var(--blue2)}
+.sync-dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+/* ── SCROLL AREA ── */
+.screen{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px calc(90px + var(--safe-bot));display:none}
+.screen.active{display:block}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;
+  background:var(--bg2);border-top:1px solid var(--border);
+  display:flex;
+  padding:8px 0 calc(8px + var(--safe-bot));
+  z-index:50;flex-shrink:0;
+}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0;cursor:pointer;border:none;background:none;color:var(--text3);transition:color 0.15s}
+.nav-btn.active{color:var(--red)}
+.nav-btn svg{width:22px;height:22px}
+.nav-btn span{font-family:'Barlow Condensed',sans-serif;font-size:0.62rem;letter-spacing:0.06em;text-transform:uppercase;font-weight:700}
+
+/* ── CARDS ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:12px}
+.card-title{font-family:'Barlow Condensed',sans-serif;font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+
+/* ── METRICS ── */
+.metric-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.metric-row.m3{grid-template-columns:1fr 1fr 1fr}
+.metric{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px}
+.metric-label{font-size:0.62rem;color:var(--text3);font-family:'Barlow Condensed',sans-serif;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:3px}
+.metric-val{font-family:'Barlow Condensed',sans-serif;font-size:1.35rem;font-weight:700;color:var(--red)}
+.metric-val.w{color:var(--text)}.metric-val.b{color:var(--blue2)}
+
+/* ── FORMS ── */
+.field{margin-bottom:12px}
+.field label{display:block;font-size:0.68rem;font-family:'Barlow Condensed',sans-serif;letter-spacing:0.08em;text-transform:uppercase;color:var(--text2);margin-bottom:5px}
+.field input,.field select,.field textarea{
+  width:100%;background:var(--bg3);border:1px solid var(--border2);
+  border-radius:var(--r-sm);color:var(--text);font-family:'Barlow',sans-serif;
+  font-size:1rem;padding:11px 12px;outline:none;
+  -webkit-appearance:none;appearance:none;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue2)}
+.field select option{background:var(--bg2)}
+.field textarea{resize:none;height:80px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+
+/* ── BUTTONS ── */
+.btn{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;letter-spacing:0.04em;padding:13px 20px;border-radius:var(--r-sm);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;width:100%;transition:transform 0.1s,opacity 0.15s}
+.btn:active{transform:scale(0.97)}
+.btn-red{background:var(--red);color:#fff}
+.btn-red:hover{background:var(--red2)}
+.btn-blue{background:var(--blue);color:#fff}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2)}
+.btn-success{background:rgba(46,184,122,0.15);color:var(--success);border:1px solid rgba(46,184,122,0.3)}
+.btn-sm{font-size:0.82rem;padding:8px 14px;width:auto}
+.btn-danger{background:transparent;color:var(--red);border:1px solid var(--red-dim);font-size:0.82rem;padding:7px 12px;width:auto}
+.btn-row{display:flex;gap:8px;margin-top:4px}
+
+/* ── LIST ITEMS ── */
+.list-item{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer;transition:border-color 0.15s;-webkit-user-select:none;user-select:none}
+.list-item:active{border-color:var(--blue);background:var(--bg3)}
+.list-item-name{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.1rem}
+.list-item-sub{font-size:0.8rem;color:var(--text2);margin-top:3px;line-height:1.5}
+.list-item-meta{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+
+/* ── BADGES ── */
+.badge{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-size:0.65rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:2px 8px;border-radius:20px}
+.badge-red{background:var(--red-dim);color:var(--red2)}
+.badge-blue{background:var(--blue-dim);color:var(--blue2)}
+.badge-green{background:rgba(46,184,122,0.15);color:var(--success)}
+.badge-gray{background:rgba(255,255,255,0.06);color:var(--text3)}
+.status-active{background:rgba(46,184,122,0.15);color:var(--success)}
+.status-pending{background:var(--blue-dim);color:var(--blue2)}
+.status-complete{background:rgba(255,255,255,0.06);color:var(--text3)}
+
+/* ── SECTION HEADER ── */
+.screen-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.screen-title{font-family:'Barlow Condensed',sans-serif;font-size:1.5rem;font-weight:700}
+.screen-sub{font-size:0.78rem;color:var(--text2);margin-top:1px}
+
+/* ── TABS (entry type) ── */
+.tab-bar{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin-bottom:14px;-webkit-overflow-scrolling:touch}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab-pill{font-family:'Barlow Condensed',sans-serif;font-size:0.82rem;font-weight:700;padding:7px 14px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all 0.15s}
+.tab-pill.active{background:var(--red);color:#fff;border-color:var(--red)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+
+/* ── SHEET / MODAL ── */
+.sheet-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:200;align-items:flex-end}
+.sheet-bg.open{display:flex}
+.sheet{background:var(--bg2);border-radius:20px 20px 0 0;padding:20px 16px calc(20px + var(--safe-bot));width:100%;max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px}
+.sheet-title{font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:700;color:var(--red);margin-bottom:16px}
+
+/* ── DIVIDER ── */
+.divider{border:none;border-top:1px solid var(--border);margin:12px 0}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:3rem 1rem;color:var(--text3);font-family:'Barlow Condensed',sans-serif;font-size:0.95rem;letter-spacing:0.04em}
+
+/* ── PHOTO GRID ── */
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.photo-thumb{aspect-ratio:1;object-fit:cover;border-radius:8px;width:100%}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:calc(72px + var(--safe-bot) + 12px);left:50%;transform:translateX(-50%) translateY(10px);background:var(--bg4);border:1px solid var(--blue);color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:0.95rem;font-weight:600;padding:10px 20px;border-radius:20px;z-index:999;opacity:0;transition:all 0.25s;pointer-events:none;white-space:nowrap;max-width:90vw}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── CALLOUT ── */
+.callout{background:var(--bg3);border-left:3px solid var(--blue);padding:10px 13px;border-radius:0 8px 8px 0;font-size:0.84rem;color:var(--text2);line-height:1.6;margin-bottom:12px}
+
+/* ── FAB ── */
+.fab{position:fixed;bottom:calc(72px + var(--safe-bot) + 14px);right:16px;width:52px;height:52px;background:var(--red);border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:40;box-shadow:0 4px 16px rgba(232,25,26,0.4)}
+.fab svg{width:24px;height:24px}
+.fab:active{transform:scale(0.93)}
+
+/* ── JOB DETAIL BACK ── */
+.back-bar{display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer;color:var(--text2)}
+.back-bar svg{width:18px;height:18px}
+.back-bar span{font-family:'Barlow Condensed',sans-serif;font-size:0.9rem;font-weight:600;letter-spacing:0.04em}
+
+/* ── CUSTOMER INFO STRIP ── */
+.info-strip{background:var(--bg3);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:12px;font-size:0.82rem;color:var(--text2);line-height:1.8}
+
+/* ── SETUP STEPS ── */
+.step{display:flex;gap:12px;margin-bottom:16px}
+.step-num{width:26px;height:26px;min-width:26px;background:var(--red);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.85rem;margin-top:1px}
+.step-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;margin-bottom:3px}
+.step-desc{font-size:0.83rem;color:var(--text2);line-height:1.6}
+.step-desc a{color:var(--blue2)}
+code{background:var(--bg3);border:1px solid var(--border2);padding:2px 6px;border-radius:4px;font-family:monospace;font-size:0.78rem;color:var(--blue2);word-break:break-all}
+
+/* ── LOG ROWS ── */
+.log-row{padding:10px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.log-row:last-child{border-bottom:none}
+.log-row-left{flex:1;min-width:0}
+.log-row-val{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;color:var(--red);white-space:nowrap}
+.log-row-title{font-size:0.88rem;font-weight:500}
+.log-row-sub{font-size:0.76rem;color:var(--text2);margin-top:2px}
+
+pre{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:12px;font-size:0.72rem;color:var(--blue2);overflow-x:auto;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+      </svg>
+    </div>
+    <div>
+      <div class="header-title">Patriot Equipment Repair</div>
+      <div class="header-sub">Field Tracker</div>
+    </div>
+  </div>
+  <div class="sync-pill sync-off" id="sync-pill" onclick="syncNow()">
+    <div class="sync-dot"></div><span id="sync-label">Offline</span>
+  </div>
+</div>
+
+<!-- SCREENS -->
+
+<!-- JOBS -->
+<div class="screen active" id="screen-jobs">
+  <div class="screen-header">
+    <div><div class="screen-title">Jobs</div><div class="screen-sub" id="jobs-sub">Loading...</div></div>
+    <button class="btn btn-red btn-sm" onclick="openSheet('sheet-new-job');populateJobSheet()">+ New</button>
+  </div>
+  <div id="jobs-list"></div>
+</div>
+
+<!-- JOB DETAIL -->
+<div class="screen" id="screen-job-detail">
+  <div class="back-bar" onclick="showScreen('jobs')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    <span>All jobs</span>
+  </div>
+  <div id="job-detail-content"></div>
+</div>
+
+<!-- CUSTOMERS -->
+<div class="screen" id="screen-customers">
+  <div class="screen-header">
+    <div><div class="screen-title">Customers</div><div class="screen-sub" id="cust-sub"></div></div>
+    <button class="btn btn-red btn-sm" onclick="openCustomerSheet()">+ Add</button>
+  </div>
+  <div id="cust-list"></div>
+</div>
+
+<!-- EQUIPMENT -->
+<div class="screen" id="screen-equipment">
+  <div class="screen-header">
+    <div><div class="screen-title">Equipment</div><div class="screen-sub" id="eq-sub"></div></div>
+    <button class="btn btn-red btn-sm" onclick="openEquipmentSheet()">+ Add</button>
+  </div>
+  <div id="eq-list"></div>
+</div>
+
+<!-- SETTINGS -->
+<div class="screen" id="screen-settings">
+  <div class="screen-title" style="margin-bottom:16px">Settings</div>
+
+  <div class="card">
+    <div class="card-title">Google Drive sync</div>
+    <div class="callout">Syncs all jobs, customers, and equipment across all your devices via Google Sheets.</div>
+    <div class="field"><label>Web App URL</label><input type="url" id="cfg-url" placeholder="https://script.google.com/macros/s/.../exec" inputmode="url"></div>
+    <div class="btn-row">
+      <button class="btn btn-red" style="flex:1" onclick="saveSettings()">Save &amp; connect</button>
+      <button class="btn btn-blue" style="flex:1" onclick="pullAndRefresh()">&#8595; Pull data</button>
+    </div>
+    <div style="margin-top:10px">
+      <button class="btn btn-ghost" onclick="disconnectDrive()">Disconnect</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Setup guide</div>
+    <div class="step"><div class="step-num">1</div><div><div class="step-title">Create a Google Sheet</div><div class="step-desc">Go to <a href="https://sheets.google.com">sheets.google.com</a> and create a new blank sheet named <strong>PER Field Tracker Data</strong>.</div></div></div>
+    <div class="step"><div class="step-num">2</div><div><div class="step-title">Open Apps Script</div><div class="step-desc">In the sheet: <strong>Extensions → Apps Script</strong>. Delete all existing code.</div></div></div>
+    <div class="step"><div class="step-num">3</div><div><div class="step-title">Paste this script</div>
+      <pre id="script-code">function doGet(e) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var val = sheet.getRange("A1").getValue();
+    var cb = e.parameter.callback;
+    var json = JSON.stringify({data: val});
+    if (cb) {
+      return ContentService
+        .createTextOutput(cb + "(" + json + ")")
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    }
+    return ContentService
+      .createTextOutput(json)
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({error: err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doPost(e) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var body = e.postData ? JSON.parse(e.postData.contents) : JSON.parse(e.parameter.payload);
+    if (body.action === "write") {
+      sheet.getRange("A1").setValue(body.data);
+      return ContentService
+        .createTextOutput(JSON.stringify({ok: true}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    return ContentService
+      .createTextOutput(JSON.stringify({error: "Unknown"}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({error: err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}</pre>
+      <button class="btn btn-ghost" style="margin-top:8px" onclick="copyScript()">Copy script</button>
+    </div></div>
+    <div class="step"><div class="step-num">4</div><div><div class="step-title">Deploy as Web App</div><div class="step-desc"><strong>Deploy → New deployment</strong><br>Type: <strong>Web app</strong><br>Execute as: <strong>Me</strong><br>Access: <strong>Anyone</strong><br>Copy the Web App URL and paste it above.</div></div></div>
+    <div class="step"><div class="step-num">5</div><div><div class="step-title">Install on home screen</div><div class="step-desc">In Safari: tap the <strong>Share</strong> button → <strong>Add to Home Screen</strong>. The app icon will appear on your home screen.</div></div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">About</div>
+    <div style="font-size:0.84rem;color:var(--text2);line-height:1.7">
+      Patriot Equipment Repair Field Tracker<br>
+      All data stored in your Google Drive.<br>
+      Works offline — syncs when back online.
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="nav-btn active" id="nav-jobs" onclick="showScreen('jobs')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+    <span>Jobs</span>
+  </button>
+  <button class="nav-btn" id="nav-customers" onclick="showScreen('customers')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <span>Customers</span>
+  </button>
+  <button class="nav-btn" id="nav-equipment" onclick="showScreen('equipment')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M20 12h2M2 12h2M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41"/></svg>
+    <span>Equipment</span>
+  </button>
+  <button class="nav-btn" id="nav-settings" onclick="showScreen('settings')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <span>Settings</span>
+  </button>
+</div>
+
+<!-- ── SHEETS (bottom drawer modals) ── -->
+
+<!-- NEW JOB -->
+<div class="sheet-bg" id="sheet-new-job">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">New job</div>
+    <div class="field"><label>Customer</label><select id="nj-cust" onchange="onJobCustChange()"><option value="">— select —</option></select></div>
+    <div class="field"><label>Equipment</label><select id="nj-eq" onchange="onJobEqChange()"><option value="">— select customer first —</option></select></div>
+    <div id="nj-preview" style="display:none" class="callout"></div>
+    <div class="row2">
+      <div class="field"><label>Make</label><input type="text" id="nj-make" placeholder="John Deere"></div>
+      <div class="field"><label>Model</label><input type="text" id="nj-model" placeholder="8R 410"></div>
+    </div>
+    <div class="row3">
+      <div class="field"><label>Year</label><input type="text" id="nj-year" placeholder="2019"></div>
+      <div class="field"><label>S/N</label><input type="text" id="nj-sn"></div>
+      <div class="field"><label>Rate ($/hr)</label><input type="number" id="nj-rate" value="135" step="5" inputmode="decimal"></div>
+    </div>
+    <div class="field"><label>Customer complaint</label><textarea id="nj-complaint" placeholder="What the customer reported..."></textarea></div>
+    <div class="row2">
+      <div class="field"><label>Start date</label><input type="date" id="nj-start"></div>
+      <div class="field"><label>P.O. / Unit #</label><input type="text" id="nj-po"></div>
+    </div>
+    <button class="btn btn-red" onclick="createJob()">Create job</button>
+    <button class="btn btn-ghost" style="margin-top:8px" onclick="closeSheet('sheet-new-job')">Cancel</button>
+  </div>
+</div>
+
+<!-- QUICK ENTRY -->
+<div class="sheet-bg" id="sheet-entry">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Add entry</div>
+    <div class="tab-bar">
+      <button class="tab-pill active" onclick="switchEntryTab('labour')">&#9201; Hours</button>
+      <button class="tab-pill" onclick="switchEntryTab('part')">&#128296; Part</button>
+      <button class="tab-pill" onclick="switchEntryTab('consumable')">&#9874; Consumable</button>
+      <button class="tab-pill" onclick="switchEntryTab('note')">&#128203; Note</button>
+      <button class="tab-pill" onclick="switchEntryTab('photo')">&#128247; Photo</button>
+    </div>
+
+    <div class="tab-panel active" id="ep-labour">
+      <div class="field"><label>Date</label><input type="date" id="e-date"></div>
+      <div class="row2">
+        <div class="field"><label>On-site hrs</label><input type="number" id="e-onsite" min="0" step="0.25" placeholder="0.0" inputmode="decimal"></div>
+        <div class="field"><label>Drive time hrs</label><input type="number" id="e-drive" min="0" step="0.25" placeholder="0.0" inputmode="decimal"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Drive distance ($)</label><input type="number" id="e-mileage" min="0" step="0.01" placeholder="0.00" inputmode="decimal"></div>
+        <div class="field"><label>Technician</label><select id="e-tech"><option>John</option><option>Adrian</option><option>Assistant</option></select></div>
+      </div>
+      <div class="field"><label>Note (optional)</label><input type="text" id="e-labour-note" placeholder="e.g. Diagnosing hydraulic issue"></div>
+      <button class="btn btn-red" onclick="submitEntry('labour')">+ Add hours</button>
+    </div>
+
+    <div class="tab-panel" id="ep-part">
+      <div class="field"><label>Part description</label><input type="text" id="e-part-desc" placeholder="e.g. Hydraulic pump seal kit"></div>
+      <div class="row2">
+        <div class="field"><label>Store / supplier</label><input type="text" id="e-part-store" placeholder="NAPA..."></div>
+        <div class="field"><label>Part number</label><input type="text" id="e-part-num" placeholder="optional"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Cost ($)</label><input type="number" id="e-part-cost" min="0" step="0.01" placeholder="0.00" inputmode="decimal" oninput="updateMarkupPreview()"></div>
+        <div class="field"><label>Markup / billed</label><div id="markup-preview" style="padding:11px 12px;background:var(--bg3);border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:1rem;color:var(--blue2);border:1px solid var(--border2)">—</div></div>
+      </div>
+      <div class="field"><label>Purchased by</label><select id="e-part-by"><option value="PER">P.E.R. (us)</option><option value="owner">Owner</option></select></div>
+      <button class="btn btn-red" onclick="submitEntry('part')">+ Add part</button>
+    </div>
+
+    <div class="tab-panel" id="ep-consumable">
+      <div class="field"><label>Item</label>
+        <select id="e-cons-item" onchange="fillConsPrice()">
+          <option value="">— select item —</option>
+          <option value="Brake Clean">Brake Clean</option><option value="Starter fluid">Starter fluid</option>
+          <option value="Bolts">Bolts</option><option value="RTV">RTV</option>
+          <option value="1/4 Gouging rod">1/4 Gouging rod</option><option value="5/32 Gouging rod">5/32 Gouging rod</option>
+          <option value="Oxy lance">Oxy lance</option><option value="R134a">R134a</option>
+          <option value="Rags">Rags</option><option value="Valves">Valves</option>
+          <option value="AC flush">AC flush</option><option value="O-Rings">O-Rings</option>
+          <option value="75W-90">75W-90</option><option value="AW46">AW46</option>
+          <option value="15W-40">15W-40</option><option value="THF 1000">THF 1000</option>
+          <option value="Hy-Guard">Hy-Guard</option><option value="Oil recycle fee">Oil recycle fee</option>
+          <option value="__custom__">Custom item</option>
+        </select>
+      </div>
+      <div class="field" id="cons-custom-wrap" style="display:none"><label>Custom name</label><input type="text" id="e-cons-custom"></div>
+      <div class="row2">
+        <div class="field"><label>Unit price ($)</label><input type="number" id="e-cons-price" min="0" step="0.01" placeholder="0.00" inputmode="decimal" oninput="updateConsPreview()"></div>
+        <div class="field"><label>Qty</label><input type="number" id="e-cons-qty" min="1" step="1" value="1" inputmode="numeric" oninput="updateConsPreview()"></div>
+      </div>
+      <div style="font-size:0.85rem;color:var(--text2);margin-bottom:12px">Billed (25% markup): <strong id="cons-preview" style="color:var(--red2);font-family:'Barlow Condensed',sans-serif;font-size:1rem">—</strong></div>
+      <button class="btn btn-red" onclick="submitEntry('consumable')">+ Add consumable</button>
+    </div>
+
+    <div class="tab-panel" id="ep-note">
+      <div class="field"><label>Category</label>
+        <select id="e-note-cat">
+          <option value="finding">Finding / diagnosis</option><option value="error">Error code</option>
+          <option value="work">Work performed</option><option value="before">Before condition</option>
+          <option value="after">After condition</option><option value="general">General note</option>
+        </select>
+      </div>
+      <div class="field"><label>Error code (if any)</label><input type="text" id="e-note-code" placeholder="e.g. SA 362-30.07"></div>
+      <div class="field"><label>Note</label><textarea id="e-note-text" placeholder="Findings, conditions, work performed..."></textarea></div>
+      <button class="btn btn-red" onclick="submitEntry('note')">+ Add note</button>
+    </div>
+
+    <div class="tab-panel" id="ep-photo">
+      <div class="field"><label>Caption (optional)</label><input type="text" id="e-photo-caption" placeholder="e.g. Before — cracked manifold"></div>
+      <button class="btn btn-red" onclick="document.getElementById('photo-input').click()">&#128247; Choose photos</button>
+      <div style="font-size:0.78rem;color:var(--text3);margin-top:8px">Photos save locally on this device.</div>
+    </div>
+    <button class="btn btn-ghost" style="margin-top:10px" onclick="closeSheet('sheet-entry')">Done</button>
+  </div>
+</div>
+
+<!-- CUSTOMER SHEET -->
+<div class="sheet-bg" id="sheet-customer">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="cust-sheet-title">Add customer</div>
+    <input type="hidden" id="ec-id">
+    <div class="row2">
+      <div class="field"><label>Company / name</label><input type="text" id="ec-name" placeholder="Anderson Ranch"></div>
+      <div class="field"><label>Contact person</label><input type="text" id="ec-contact" placeholder="Neil Anderson"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Address</label><input type="text" id="ec-address"></div>
+      <div class="field"><label>City, state, zip</label><input type="text" id="ec-city"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Phone</label><input type="tel" id="ec-phone" inputmode="tel"></div>
+      <div class="field"><label>Email</label><input type="email" id="ec-email" inputmode="email"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Hourly rate ($)</label><input type="number" id="ec-rate" placeholder="135" step="5" inputmode="decimal"></div>
+      <div></div>
+    </div>
+    <div class="field"><label>Notes</label><textarea id="ec-notes" placeholder="Special notes..."></textarea></div>
+    <button class="btn btn-red" onclick="saveCustomer()">Save customer</button>
+    <button class="btn btn-ghost" style="margin-top:8px" onclick="closeSheet('sheet-customer')">Cancel</button>
+  </div>
+</div>
+
+<!-- EQUIPMENT SHEET -->
+<div class="sheet-bg" id="sheet-equipment">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="eq-sheet-title">Add equipment</div>
+    <input type="hidden" id="ee-id">
+    <div class="row2">
+      <div class="field"><label>Customer</label><select id="ee-cust"><option value="">— select —</option></select></div>
+      <div class="field"><label>Nickname</label><input type="text" id="ee-nickname" placeholder="Big baler, Loader #2"></div>
+    </div>
+    <div class="row3">
+      <div class="field"><label>Make</label><input type="text" id="ee-make" placeholder="John Deere"></div>
+      <div class="field"><label>Model</label><input type="text" id="ee-model" placeholder="8R 410"></div>
+      <div class="field"><label>Year</label><input type="text" id="ee-year" placeholder="2019"></div>
+    </div>
+    <div class="row3">
+      <div class="field"><label>Serial #</label><input type="text" id="ee-sn"></div>
+      <div class="field"><label>Hours / miles</label><input type="text" id="ee-hours"></div>
+      <div class="field"><label>PIN / Unit #</label><input type="text" id="ee-pin"></div>
+    </div>
+    <div class="field"><label>Notes</label><textarea id="ee-notes" placeholder="Known issues, service history..."></textarea></div>
+    <button class="btn btn-red" onclick="saveEquipment()">Save equipment</button>
+    <button class="btn btn-ghost" style="margin-top:8px" onclick="closeSheet('sheet-equipment')">Cancel</button>
+  </div>
+</div>
+
+<!-- PHOTO LIGHTBOX -->
+<div class="sheet-bg" id="sheet-photo" onclick="closeSheet('sheet-photo')">
+  <img id="lightbox-img" style="max-width:95vw;max-height:85vh;border-radius:12px;object-fit:contain;margin:auto">
+</div>
+
+<input type="file" id="photo-input" accept="image/*" multiple style="display:none" onchange="handlePhotos(event)">
+<div class="toast" id="toast"></div>
+
+<script>
+// ── SEED DATA ──
+const SEED = [
+  {name:"Anderson Ranch",contact:"Neil Anderson",address:"6498 Birds Landing Rd",city:"Birds Landing, Ca 94512",phone:"707-689-4422",email:"AndersonCattleRanch@gmail.com",rate:135,notes:""},
+  {name:"E. A. Anderson",contact:"Ian Anderson",address:"6269 Birds Landing Rd",city:"Birds Landing, Ca 94512",phone:"707-689-4424",email:"IanAndersonRanch@gmail.com",rate:null,notes:""},
+  {name:"Willow Springs Ag LLC",contact:"Neil Anderson",address:"6498 Birds Landing Rd",city:"Birds Landing, Ca 94512",phone:"707-689-4422",email:"WillowSpringsAg@gmail.com",rate:null,notes:""},
+  {name:"Mumma Bros",contact:"Dustin Cane",address:"7645 Mumma Rd",city:"Arbuckle, Ca 95912",phone:"530-682-6748",email:"",rate:null,notes:""},
+  {name:"A.C. Farms",contact:"Andres Cervantes",address:"38797 Co Road 13",city:"Woodland, Ca 95695",phone:"530-308-7397",email:"emeral.drywallinc@gmail.com",rate:null,notes:""},
+  {name:"T.N. Ranch services",contact:"Tyler Neilson",address:"25578 County Rd 34",city:"Winters, Ca 95694",phone:"925-963-4560",email:"tnranchservices@yahoo.com",rate:null,notes:""},
+  {name:"Rodney Gubbles",contact:"Rodney Gubbles",address:"8200 Tassarara Road",city:"Pleasanton, Ca 94588",phone:"",email:"",rate:null,notes:""},
+  {name:"KDW Construction",contact:"Manny Lopez",address:"7682 Las Positas Rd",city:"Livermore, Ca 94551",phone:"925-922-5117",email:"accountspayable@kdwconstruction.com",rate:null,notes:""},
+  {name:"Wohn Ranch",contact:"Spencer Wohn",address:"9404 Airport Rd.",city:"Montague, Ca 96064",phone:"510-734-8021",email:"SpencerWohn88@gmail.com",rate:null,notes:""},
+  {name:"Chad Godoy",contact:"Chad Godoy",address:"31250 CR 25",city:"Woodland, Ca 95695",phone:"530-979-6717",email:"Chad.godoy@icloud.com",rate:null,notes:""},
+  {name:"Atkinson Hay Co",contact:"Mark Atkinson",address:"7109 Rio Dixon Rd",city:"Dixon, Ca 95620",phone:"707-365-5048",email:"Alex@atkhay.com",rate:null,notes:""},
+  {name:"Monticello Farming",contact:"Dave Silveira",address:"PO Box 809",city:"Winters, Ca 95694",phone:"530-681-6860",email:"monticello1@sbcglobal.net",rate:null,notes:""},
+  {name:"Gary Cain",contact:"Gary Cain",address:"426 Johns School Rd",city:"Arbuckle, Ca 95912",phone:"530-682-6748",email:"",rate:null,notes:""},
+  {name:"Anthony Miranda",contact:"Anthony Miranda",address:"12140 Overland Wy",city:"Wilton, Ca 95693",phone:"916-719-6897",email:"anthony@servicefirstwindowtreatment.com",rate:null,notes:""},
+  {name:"I5 Rentals",contact:"Scott Meyer",address:"8443 Commercial Way",city:"Redding CA, 96002",phone:"530-356-9088",email:"I5Scott@I5Rentals.com",rate:150,notes:""},
+  {name:"Siller And Siller",contact:"Neal Siller",address:"PO Box 430",city:"Penn Valley Ca, 95946",phone:"916-893-3462",email:"Nealsiller78@gmail.com",rate:null,notes:""},
+  {name:"Jb Ag Services",contact:"Devin Johnson",address:"833 Airport Rd",city:"Lincoln Ca, 95648",phone:"916-824-9765",email:"Devin.Johnson@hotmail.com",rate:null,notes:""},
+  {name:"H&N Enterprises",contact:"Ryan Nielson",address:"Po Box 608",city:"Pleasanton, Ca 94566",phone:"925-997-5543",email:"Accounting@hnenterprises.com",rate:null,notes:""},
+  {name:"Justin Jones",contact:"Justin Jones",address:"585 E. Creekside Circle",city:"Dixon, Ca 95620",phone:"530-219-8223",email:"JRJones1155@gmail.com",rate:null,notes:""},
+  {name:"Albiso Hay Service",contact:"Alfonso Albiso",address:"Po Box 261",city:"Dunnigan, Ca 95937",phone:"530-723-8450",email:"",rate:null,notes:""},
+  {name:"Irwin Cattle",contact:"Paul Irwin",address:"P.O. Box 218",city:"Dixon, Ca 95620",phone:"707-974-5678",email:"pirwin@bellproducts.com",rate:null,notes:""},
+  {name:"Ryan Wemple",contact:"Ryan Wemple",address:"73510 English Hills Rd",city:"Vacaville, Ca 95688",phone:"530-249-4947",email:"",rate:null,notes:""},
+  {name:"Marsh Rat Construction",contact:"Darrell May",address:"37 Willota Dr.",city:"Fairfield, Ca 94534",phone:"707-529-8138",email:"mrtmayhem@yahoo.com",rate:null,notes:""},
+  {name:"Gli-Co Hay",contact:"Brian",address:"P.O. Box 1330",city:"Dixon, Ca 95620",phone:"530-681-2562",email:"brian@gli-cohay.com",rate:null,notes:""},
+  {name:"Carli Hay",contact:"Richard Carli",address:"P.O. Box 116",city:"Ryde, Ca 95680",phone:"916-769-1095",email:"stakhay@me.com",rate:null,notes:""},
+  {name:"Crown Drill",contact:"Josh",address:"2514 Edingal Dr",city:"Bakersfield, CA 93311",phone:"661-301-4327",email:"josh@crowndrill.com",rate:null,notes:""},
+  {name:"Power Screens of California",contact:"Criss Tyler",address:"1205 Business Park Dr",city:"Dixon, Ca 95620",phone:"707-660-9133",email:"Ctylor@powerscreenofcalifornia.com",rate:null,notes:""},
+  {name:"Martinez Orchards Inc",contact:"Santiago",address:"P.O. Box 605",city:"Winters, Ca 95694",phone:"530-795-0859",email:"ar-ap@martinezorchards.com",rate:null,notes:""},
+  {name:"U.C. Davis VMTH",contact:"Sarah Blasczynski",address:"1 Garrod Dr",city:"Davis, Ca 95616",phone:"530-979-0658",email:"sjoneill@ucdavis.edu",rate:null,notes:""},
+  {name:"Sinonis Ranches",contact:"Brian Sinonis",address:"P.O. Box 265",city:"Esparto, Ca 95627",phone:"916-601-1555",email:"Briansinonis@yahoo.com",rate:null,notes:""},
+  {name:"Recology",contact:"Sherri Kadi",address:"245 N First St.",city:"Dixon, Ca 95620",phone:"530-669-1780",email:"AccountPayable1035@recology.com",rate:175,notes:""},
+  {name:"Bernie Vasquez",contact:"Ala Dolbly Ranch LLC",address:"25794 County Road 24",city:"Esparto, Ca 95627",phone:"707-372-4400",email:"Seafury8@comcast.net",rate:null,notes:""},
+  {name:"JWT Construction",contact:"Dawn Lightfoot",address:"1549 Menlo Av",city:"Clovis, Ca 93611",phone:"559-325-3827",email:"ar-ap@jwtequipment.com",rate:null,notes:""},
+  {name:"Affordable Fence",contact:"Joe Gantt",address:"701 Peregrine Way",city:"Vacaville, Ca 95688",phone:"707-372-5530",email:"joegantt@hotmail.com",rate:null,notes:""},
+  {name:"Barbosa Builders",contact:"David Barbosa",address:"27110 Road 92F",city:"Winters, Ca 95694",phone:"530-649-0360",email:"David@barbosabuilders.com",rate:null,notes:""},
+  {name:"Vogt Dairies",contact:"Derrick Vogt",address:"7831 Capay ave",city:"Orland, Ca 95963",phone:"530-321-5957",email:"3dairies@yahoo.com",rate:null,notes:""}
+];
+const CONS_PRICES={"Brake Clean":6,"Starter fluid":16,"1/4 Gouging rod":0.56,"5/32 Gouging rod":0.5,"Oxy lance":7.44,"R134a":18,"Rags":2,"Valves":4,"AC flush":35,"O-Rings":2,"75W-90":32.34,"AW46":11,"15W-40":12,"THF 1000":11.5,"Hy-Guard":26,"Oil recycle fee":2};
+
+// ── HELPERS ──
+function getMarkup(c){if(c<=10)return 1;if(c<=20)return 0.8;if(c<=50)return 0.6;if(c<=100)return 0.4;if(c<=500)return 0.2;if(c<=1000)return 0.15;return 0.1}
+function markupTier(c){if(c<=10)return"100%";if(c<=20)return"80%";if(c<=50)return"60%";if(c<=100)return"40%";if(c<=500)return"20%";if(c<=1000)return"15%";return"10%"}
+function fmt(n){return'$'+Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',')}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function today(){return new Date().toISOString().slice(0,10)}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+// ── STATE ──
+let STATE={customers:[],equipment:[],jobs:[]};
+let SETTINGS={webAppUrl:''};
+let currentJobId=null;
+let currentEntryTab='labour';
+let syncTimer=null;
+
+function saveLocal(){localStorage.setItem('per_pwa_v1',JSON.stringify(STATE));localStorage.setItem('per_cfg_v1',JSON.stringify(SETTINGS))}
+function loadLocal(){
+  const s=localStorage.getItem('per_pwa_v1'),c=localStorage.getItem('per_cfg_v1');
+  if(s)STATE=JSON.parse(s);
+  if(c)SETTINGS=JSON.parse(c);
+  if(!STATE.customers||!STATE.customers.length){
+    STATE.customers=SEED.map(x=>({...x,id:uid()}));saveLocal();
+  }
+}
+function getCust(id){return STATE.customers.find(c=>c.id===id)}
+function getEq(id){return STATE.equipment.find(e=>e.id===id)}
+function getJob(id){return STATE.jobs.find(j=>j.id===id)}
+function jobTotals(job){
+  const r=job.rate||135;
+  const labour=job.entries.filter(e=>e.type==='labour').reduce((s,e)=>s+(parseFloat(e.onsite)||0)*r+(parseFloat(e.drive)||0)*r+(parseFloat(e.mileage)||0),0);
+  const parts=job.entries.filter(e=>e.type==='part').reduce((s,e)=>{const c=parseFloat(e.cost)||0;return s+c*(1+getMarkup(c))},0);
+  const cons=job.entries.filter(e=>e.type==='consumable').reduce((s,e)=>s+(parseFloat(e.price)||0)*(parseFloat(e.qty)||1)*1.25,0);
+  const onsiteH=job.entries.filter(e=>e.type==='labour').reduce((s,e)=>s+(parseFloat(e.onsite)||0),0);
+  const driveH=job.entries.filter(e=>e.type==='labour').reduce((s,e)=>s+(parseFloat(e.drive)||0),0);
+  return{labour,parts,cons,total:labour+parts+cons,onsiteH,driveH};
+}
+function scheduleSave(){saveLocal();clearTimeout(syncTimer);if(SETTINGS.webAppUrl)syncTimer=setTimeout(syncNow,3000)}
+
+// ── SYNC ──
+function setSyncStatus(st,msg){
+  const el=document.getElementById('sync-pill');
+  const lb=document.getElementById('sync-label');
+  el.className='sync-pill sync-'+st;lb.textContent=msg;
+}
+
+// WRITE: use no-cors form POST — bypasses CORS for writes
+function syncNow(){
+  if(!SETTINGS.webAppUrl){toast('Set up Drive in Settings');return;}
+  setSyncStatus('busy','Syncing...');
+  const data=JSON.stringify(STATE);
+  // Use a hidden iframe + form to POST without CORS issues
+  const form=document.createElement('form');
+  form.method='POST';
+  form.action=SETTINGS.webAppUrl;
+  form.target='sync-iframe';
+  form.style.display='none';
+  const inp=document.createElement('input');
+  inp.name='payload';inp.value=JSON.stringify({action:'write',data});
+  form.appendChild(inp);
+  document.body.appendChild(form);
+  let iframe=document.getElementById('sync-iframe');
+  if(!iframe){iframe=document.createElement('iframe');iframe.name='sync-iframe';iframe.id='sync-iframe';iframe.style.display='none';document.body.appendChild(iframe);}
+  form.submit();
+  document.body.removeChild(form);
+  // Optimistically mark as synced after short delay
+  setTimeout(()=>{
+    setSyncStatus('ok','Synced '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}));
+    toast('Synced to Drive');
+  },2000);
+}
+
+// READ: use JSONP — bypasses CORS for reads
+function pullAndRefresh(){
+  if(!SETTINGS.webAppUrl){toast('Enter Web App URL first');return;}
+  setSyncStatus('busy','Loading...');
+  const cbName='_perCallback_'+Date.now();
+  window[cbName]=function(data){
+    try{
+      if(data&&data.data&&data.data.length>2){
+        const p=JSON.parse(data.data);
+        if(p.jobs){STATE=p;saveLocal();}
+      }
+      setSyncStatus('ok','Synced');renderJobs();toast('Data loaded from Drive');
+    }catch(e){toast('Parse error — data may be empty');}
+    delete window[cbName];
+    const s=document.getElementById('jsonp-script');if(s)s.remove();
+  };
+  const script=document.createElement('script');
+  script.id='jsonp-script';
+  script.src=SETTINGS.webAppUrl+'?callback='+cbName+'&t='+Date.now();
+  script.onerror=()=>{setSyncStatus('off','Failed');toast('Pull failed — check URL');delete window[cbName];};
+  document.head.appendChild(script);
+}
+
+// ── NAVIGATION ──
+let currentScreen='jobs';
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  const navEl=document.getElementById('nav-'+name);
+  if(navEl)navEl.classList.add('active');
+  currentScreen=name;
+  if(name==='jobs')renderJobs();
+  else if(name==='customers')renderCustomers();
+  else if(name==='equipment')renderEquipment();
+  else if(name==='settings')renderSettings();
+}
+function showJobDetail(jobId){
+  currentJobId=jobId;
+  renderJobDetail();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-job-detail').classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('nav-jobs').classList.add('active');
+}
+
+// ── RENDER JOBS ──
+function renderJobs(){
+  const all=STATE.jobs;
+  const active=all.filter(j=>j.status==='active').length;
+  document.getElementById('jobs-sub').textContent=`${all.length} total · ${active} active`;
+  const list=document.getElementById('jobs-list');
+  if(!all.length){list.innerHTML='<div class="empty">No jobs yet. Tap + New to get started.</div>';return;}
+  list.innerHTML=all.map(j=>{
+    const t=jobTotals(j);
+    return`<div class="list-item" onclick="showJobDetail('${j.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div class="list-item-name">${esc(j.customerName||'Job')}</div>
+        <span class="badge status-${j.status}">${j.status}</span>
+      </div>
+      <div class="list-item-sub">${esc([j.year,j.make,j.model].filter(Boolean).join(' '))||'No equipment'}</div>
+      <div class="list-item-meta">
+        <span class="badge badge-red">${t.onsiteH.toFixed(1)}h on-site</span>
+        <span class="badge badge-blue">${j.entries.filter(e=>e.type==='part').length} parts</span>
+        <span class="badge badge-gray">${fmt(t.total)}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── RENDER JOB DETAIL ──
+function renderJobDetail(){
+  const job=getJob(currentJobId);if(!job)return;
+  const t=jobTotals(job);
+  const cust=getCust(job.customerId);
+  let html=`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+      <div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:700">${esc(job.customerName)}</div>
+        <div style="font-size:0.82rem;color:var(--text2)">${esc([job.year,job.make,job.model].filter(Boolean).join(' '))}${job.sn?' · '+esc(job.sn):''}</div>
+      </div>
+      <select onchange="setJobStatus('${job.id}',this.value)" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:8px;padding:6px 10px;font-family:'Barlow Condensed',sans-serif;font-size:0.85rem;-webkit-appearance:none">
+        <option value="active"${job.status==='active'?' selected':''}>Active</option>
+        <option value="pending"${job.status==='pending'?' selected':''}>Pending</option>
+        <option value="complete"${job.status==='complete'?' selected':''}>Complete</option>
+      </select>
+    </div>
+    ${cust?`<div class="info-strip">
+      ${cust.contact?`<strong>${esc(cust.contact)}</strong><br>`:''}
+      ${cust.phone?`<a href="tel:${esc(cust.phone)}" style="color:var(--blue2)">${esc(cust.phone)}</a> &nbsp;`:''}
+      ${cust.rate?`Rate: <strong style="color:var(--red)">${fmt(cust.rate)}/hr</strong>`:''}
+    </div>`:''}
+    <div class="metric-row">
+      <div class="metric"><div class="metric-label">On-site</div><div class="metric-val">${t.onsiteH.toFixed(1)}h</div></div>
+      <div class="metric"><div class="metric-label">Drive</div><div class="metric-val w">${t.driveH.toFixed(1)}h</div></div>
+    </div>
+    <div class="metric-row m3">
+      <div class="metric"><div class="metric-label">Labour</div><div class="metric-val" style="font-size:1.1rem">${fmt(t.labour)}</div></div>
+      <div class="metric"><div class="metric-label">Parts+cons</div><div class="metric-val w" style="font-size:1.1rem">${fmt(t.parts+t.cons)}</div></div>
+      <div class="metric"><div class="metric-label">Total</div><div class="metric-val b" style="font-size:1.1rem">${fmt(t.total)}</div></div>
+    </div>
+    <button class="btn btn-red" style="margin-bottom:10px" onclick="openSheet('sheet-entry');resetEntryTab()">+ Add entry</button>`;
+
+  // Labour log
+  const labour=job.entries.filter(e=>e.type==='labour');
+  if(labour.length){
+    html+=`<div class="card"><div class="card-title">Hours log — ${fmt(job.rate||135)}/hr</div>`;
+    labour.forEach(x=>{
+      const total=(parseFloat(x.onsite||0)+parseFloat(x.drive||0))*(job.rate||135)+(parseFloat(x.mileage)||0);
+      html+=`<div class="log-row">
+        <div class="log-row-left">
+          <div class="log-row-title">${esc(x.tech||'John')} &bull; ${x.date||'—'}</div>
+          <div class="log-row-sub">${parseFloat(x.onsite||0).toFixed(2)}h on-site · ${parseFloat(x.drive||0).toFixed(2)}h drive · $${parseFloat(x.mileage||0).toFixed(2)} mi${x.note?' · '+esc(x.note):''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="log-row-val">${fmt(total)}</div>
+          <button class="btn btn-danger" onclick="deleteEntry('${job.id}','${x.id}')">✕</button>
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  // Parts log
+  const parts=job.entries.filter(e=>e.type==='part');
+  if(parts.length){
+    html+=`<div class="card"><div class="card-title">Parts</div>`;
+    parts.forEach(x=>{
+      const c=parseFloat(x.cost)||0,b=c*(1+getMarkup(c));
+      html+=`<div class="log-row">
+        <div class="log-row-left">
+          <div class="log-row-title">${esc(x.desc||'Part')}</div>
+          <div class="log-row-sub">${esc(x.store||'')}${x.partNum?' · '+esc(x.partNum):''} · cost ${fmt(c)} · ${markupTier(c)} markup · ${x.by==='PER'?'P.E.R.':'Owner'}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="log-row-val">${fmt(b)}</div>
+          <button class="btn btn-danger" onclick="deleteEntry('${job.id}','${x.id}')">✕</button>
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  // Consumables
+  const cons=job.entries.filter(e=>e.type==='consumable');
+  if(cons.length){
+    html+=`<div class="card"><div class="card-title">Consumables (25% markup)</div>`;
+    cons.forEach(x=>{
+      const cost=(parseFloat(x.price)||0)*(parseFloat(x.qty)||1);
+      html+=`<div class="log-row">
+        <div class="log-row-left">
+          <div class="log-row-title">${esc(x.name)}</div>
+          <div class="log-row-sub">x${x.qty} @ ${fmt(x.price||0)} each</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="log-row-val">${fmt(cost*1.25)}</div>
+          <button class="btn btn-danger" onclick="deleteEntry('${job.id}','${x.id}')">✕</button>
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  // Notes
+  const notes=job.entries.filter(e=>e.type==='note');
+  const catLabels={finding:'Finding',error:'Error code',work:'Work performed',before:'Before',after:'After',general:'Note'};
+  if(notes.length){
+    html+=`<div class="card"><div class="card-title">Notes</div>`;
+    notes.forEach(x=>{
+      html+=`<div class="log-row" style="flex-direction:column;gap:6px;align-items:flex-start">
+        <div style="display:flex;gap:6px;align-items:center;width:100%">
+          <span class="badge badge-red">${catLabels[x.cat]||'Note'}</span>
+          ${x.code?`<span class="badge badge-blue">${esc(x.code)}</span>`:''}
+          <button class="btn btn-danger" style="margin-left:auto" onclick="deleteEntry('${job.id}','${x.id}')">✕</button>
+        </div>
+        <div style="font-size:0.9rem;line-height:1.6">${esc(x.text)}</div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  // Photos
+  const photos=job.entries.filter(e=>e.type==='photo');
+  if(photos.length){
+    html+=`<div class="card"><div class="card-title">Photos (${photos.length})</div><div class="photo-grid">`;
+    photos.forEach(x=>{
+      html+=`<div style="position:relative">
+        <img src="${x.data}" class="photo-thumb" onclick="openLightbox('${x.id}')">
+        <button style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:0.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center" onclick="deleteEntry('${job.id}','${x.id}')">✕</button>
+      </div>`;
+    });
+    html+=`</div></div>`;
+  }
+
+  // Actions
+  html+=`<div class="btn-row" style="margin-top:8px">
+    <button class="btn btn-blue" style="flex:1" onclick="generateReportPrompt('${job.id}')">Copy report data</button>
+    <button class="btn btn-danger btn-sm" onclick="deleteJob('${job.id}')">Delete</button>
+  </div>`;
+
+  document.getElementById('job-detail-content').innerHTML=html;
+}
+
+// ── RENDER CUSTOMERS ──
+function renderCustomers(){
+  const sorted=[...STATE.customers].sort((a,b)=>a.name.localeCompare(b.name));
+  document.getElementById('cust-sub').textContent=`${sorted.length} records`;
+  const list=document.getElementById('cust-list');
+  if(!sorted.length){list.innerHTML='<div class="empty">No customers yet.</div>';return;}
+  list.innerHTML=sorted.map(c=>{
+    const eqC=STATE.equipment.filter(e=>e.customerId===c.id).length;
+    const jobC=STATE.jobs.filter(j=>j.customerId===c.id).length;
+    return`<div class="list-item">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div class="list-item-name">${esc(c.name)}</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="openCustomerSheet('${c.id}')">Edit</button>
+          <button class="btn btn-danger" onclick="deleteCustomer('${c.id}')">✕</button>
+        </div>
+      </div>
+      <div class="list-item-sub">
+        ${c.contact?esc(c.contact)+'<br>':''}
+        ${c.phone?`<a href="tel:${esc(c.phone)}" style="color:var(--blue2)">${esc(c.phone)}</a> · `:''}
+        ${c.rate?`<strong style="color:var(--red)">${fmt(c.rate)}/hr</strong>`:''}
+      </div>
+      <div class="list-item-meta">
+        <span class="badge badge-blue">${eqC} machines</span>
+        <span class="badge badge-gray">${jobC} jobs</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── RENDER EQUIPMENT ──
+function renderEquipment(){
+  const sorted=[...STATE.equipment].sort((a,b)=>(a.customerId||'').localeCompare(b.customerId||''));
+  document.getElementById('eq-sub').textContent=`${sorted.length} machines`;
+  const list=document.getElementById('eq-list');
+  if(!sorted.length){list.innerHTML='<div class="empty">No equipment yet.</div>';return;}
+  list.innerHTML=sorted.map(e=>{
+    const c=getCust(e.customerId);
+    const jobC=STATE.jobs.filter(j=>j.equipmentId===e.id).length;
+    return`<div class="list-item">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="list-item-name">${esc(e.nickname||[e.make,e.model].filter(Boolean).join(' '))}</div>
+          ${e.nickname?`<div style="font-size:0.8rem;color:var(--text2)">${esc([e.year,e.make,e.model].filter(Boolean).join(' '))}</div>`:''}
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="openEquipmentSheet('${e.id}')">Edit</button>
+          <button class="btn btn-danger" onclick="deleteEquipment('${e.id}')">✕</button>
+        </div>
+      </div>
+      <div class="list-item-sub">
+        ${c?`Owner: <strong>${esc(c.name)}</strong><br>`:''}
+        ${e.sn?'S/N: '+esc(e.sn)+' · ':''}${e.hours?esc(e.hours):''}
+      </div>
+      <div class="list-item-meta"><span class="badge badge-gray">${jobC} jobs</span></div>
+    </div>`;
+  }).join('');
+}
+
+function renderSettings(){
+  const urlEl=document.getElementById('cfg-url');
+  if(urlEl)urlEl.value=SETTINGS.webAppUrl||'';
+}
+
+// ── SHEETS ──
+function openSheet(id){document.getElementById(id).classList.add('open')}
+function closeSheet(id){document.getElementById(id).classList.remove('open')}
+
+// ── JOB SHEET ──
+function populateJobSheet(preCustId,preEqId){
+  const sel=document.getElementById('nj-cust');
+  sel.innerHTML='<option value="">— select customer —</option>'+
+    [...STATE.customers].sort((a,b)=>a.name.localeCompare(b.name))
+      .map(c=>`<option value="${c.id}"${c.id===preCustId?' selected':''}>${esc(c.name)}</option>`).join('');
+  if(preCustId){populateJobEqDrop(preCustId,preEqId);const c=getCust(preCustId);if(c&&c.rate)document.getElementById('nj-rate').value=c.rate;}
+  else document.getElementById('nj-eq').innerHTML='<option value="">— select customer first —</option>';
+  if(preEqId)autofillFromEq(preEqId);
+  document.getElementById('nj-start').value=today();
+  document.getElementById('nj-complaint').value='';
+  document.getElementById('nj-preview').style.display='none';
+}
+function populateJobEqDrop(custId,preEqId){
+  const custEq=STATE.equipment.filter(e=>e.customerId===custId);
+  document.getElementById('nj-eq').innerHTML=
+    '<option value="">— select equipment —</option>'+
+    custEq.map(e=>`<option value="${e.id}"${e.id===preEqId?' selected':''}>${esc(e.nickname||[e.make,e.model].filter(Boolean).join(' '))}</option>`).join('')+
+    '<option value="__new__">+ Add new equipment</option>';
+}
+function onJobCustChange(){
+  const id=document.getElementById('nj-cust').value;
+  const c=getCust(id);
+  if(c){document.getElementById('nj-rate').value=c.rate||135;populateJobEqDrop(id,'');}
+  clearJobEqFields();document.getElementById('nj-preview').style.display='none';
+}
+function onJobEqChange(){
+  const eqId=document.getElementById('nj-eq').value;
+  if(eqId==='__new__'){closeSheet('sheet-new-job');openEquipmentSheet();return;}
+  if(eqId)autofillFromEq(eqId);else clearJobEqFields();
+}
+function autofillFromEq(eqId){
+  const e=getEq(eqId);if(!e)return;
+  document.getElementById('nj-make').value=e.make||'';
+  document.getElementById('nj-model').value=e.model||'';
+  document.getElementById('nj-year').value=e.year||'';
+  document.getElementById('nj-sn').value=e.sn||'';
+  const prev=document.getElementById('nj-preview');
+  prev.style.display='block';
+  prev.textContent=`${e.nickname||[e.make,e.model].filter(Boolean).join(' ')}${e.sn?' · S/N '+e.sn:''}${e.hours?' · '+e.hours:''}`;
+}
+function clearJobEqFields(){['nj-make','nj-model','nj-year','nj-sn'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''})}
+function createJob(){
+  const custId=document.getElementById('nj-cust').value;
+  if(!custId){toast('Select a customer');return;}
+  const c=getCust(custId);
+  const make=document.getElementById('nj-make').value.trim();
+  const model=document.getElementById('nj-model').value.trim();
+  if(!make&&!model){toast('Select equipment or enter make/model');return;}
+  const eqId=document.getElementById('nj-eq').value;
+  const job={
+    id:uid(),customerId:custId,customerName:c?c.name:'',
+    equipmentId:eqId&&eqId!=='__new__'?eqId:'',
+    make,model,year:document.getElementById('nj-year').value,
+    sn:document.getElementById('nj-sn').value,
+    rate:parseFloat(document.getElementById('nj-rate').value)||135,
+    complaint:document.getElementById('nj-complaint').value,
+    startDate:document.getElementById('nj-start').value,
+    po:document.getElementById('nj-po').value,
+    status:'active',entries:[]
+  };
+  STATE.jobs.push(job);scheduleSave();
+  closeSheet('sheet-new-job');toast('Job created');showJobDetail(job.id);
+}
+function setJobStatus(jobId,status){
+  const job=getJob(jobId);if(!job)return;
+  job.status=status;scheduleSave();toast('Status: '+status);
+}
+function deleteJob(jobId){
+  if(!confirm('Delete this job?'))return;
+  STATE.jobs=STATE.jobs.filter(j=>j.id!==jobId);
+  scheduleSave();toast('Job deleted');showScreen('jobs');
+}
+
+// ── CUSTOMER SHEET ──
+function openCustomerSheet(id){
+  document.getElementById('cust-sheet-title').textContent=id?'Edit customer':'Add customer';
+  document.getElementById('ec-id').value=id||'';
+  if(id){const c=getCust(id);['name','contact','address','city','phone','email','rate','notes'].forEach(f=>document.getElementById('ec-'+f).value=c[f]||'');}
+  else{['name','contact','address','city','phone','email','rate','notes'].forEach(f=>document.getElementById('ec-'+f).value='');}
+  openSheet('sheet-customer');
+}
+function saveCustomer(){
+  const id=document.getElementById('ec-id').value;
+  const name=document.getElementById('ec-name').value.trim();
+  if(!name){toast('Customer name required');return;}
+  const data={name,contact:document.getElementById('ec-contact').value,address:document.getElementById('ec-address').value,city:document.getElementById('ec-city').value,phone:document.getElementById('ec-phone').value,email:document.getElementById('ec-email').value,rate:parseFloat(document.getElementById('ec-rate').value)||null,notes:document.getElementById('ec-notes').value};
+  if(id)Object.assign(getCust(id),data);
+  else STATE.customers.push({...data,id:uid()});
+  scheduleSave();closeSheet('sheet-customer');toast(id?'Customer updated':'Customer added');renderCustomers();
+}
+function deleteCustomer(id){
+  if(!confirm('Delete customer?'))return;
+  STATE.customers=STATE.customers.filter(c=>c.id!==id);
+  scheduleSave();renderCustomers();toast('Deleted');
+}
+
+// ── EQUIPMENT SHEET ──
+function openEquipmentSheet(id){
+  document.getElementById('eq-sheet-title').textContent=id?'Edit equipment':'Add equipment';
+  document.getElementById('ee-id').value=id||'';
+  const sel=document.getElementById('ee-cust');
+  const preCust=id?getEq(id).customerId:'';
+  sel.innerHTML='<option value="">— select customer —</option>'+
+    [...STATE.customers].sort((a,b)=>a.name.localeCompare(b.name))
+      .map(c=>`<option value="${c.id}"${c.id===preCust?' selected':''}>${esc(c.name)}</option>`).join('');
+  if(id){const e=getEq(id);['nickname','make','model','year','sn','hours','pin','notes'].forEach(f=>document.getElementById('ee-'+f).value=e[f]||'');}
+  else{['nickname','make','model','year','sn','hours','pin','notes'].forEach(f=>document.getElementById('ee-'+f).value='');}
+  openSheet('sheet-equipment');
+}
+function saveEquipment(){
+  const id=document.getElementById('ee-id').value;
+  const make=document.getElementById('ee-make').value.trim();
+  const model=document.getElementById('ee-model').value.trim();
+  const nick=document.getElementById('ee-nickname').value.trim();
+  if(!make&&!model&&!nick){toast('Enter make, model, or nickname');return;}
+  const data={customerId:document.getElementById('ee-cust').value,nickname:nick,make,model,year:document.getElementById('ee-year').value,sn:document.getElementById('ee-sn').value,hours:document.getElementById('ee-hours').value,pin:document.getElementById('ee-pin').value,notes:document.getElementById('ee-notes').value};
+  if(id)Object.assign(getEq(id),data);
+  else STATE.equipment.push({...data,id:uid()});
+  scheduleSave();closeSheet('sheet-equipment');toast(id?'Equipment updated':'Equipment added');renderEquipment();
+}
+function deleteEquipment(id){
+  if(!confirm('Delete equipment?'))return;
+  STATE.equipment=STATE.equipment.filter(e=>e.id!==id);
+  scheduleSave();renderEquipment();toast('Deleted');
+}
+
+// ── ENTRY ──
+function resetEntryTab(){switchEntryTab('labour')}
+function switchEntryTab(tab){
+  currentEntryTab=tab;
+  document.querySelectorAll('.tab-pill').forEach((b,i)=>{b.classList.toggle('active',['labour','part','consumable','note','photo'][i]===tab)});
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('ep-'+tab).classList.add('active');
+}
+function updateMarkupPreview(){
+  const c=parseFloat(document.getElementById('e-part-cost').value)||0;
+  document.getElementById('markup-preview').textContent=c>0?`${markupTier(c)} → ${fmt(c*(1+getMarkup(c)))}`:'—';
+}
+function fillConsPrice(){
+  const sel=document.getElementById('e-cons-item');
+  document.getElementById('cons-custom-wrap').style.display=sel.value==='__custom__'?'block':'none';
+  if(CONS_PRICES[sel.value])document.getElementById('e-cons-price').value=CONS_PRICES[sel.value];
+  updateConsPreview();
+}
+function updateConsPreview(){
+  const p=parseFloat(document.getElementById('e-cons-price').value)||0;
+  const q=parseFloat(document.getElementById('e-cons-qty').value)||1;
+  document.getElementById('cons-preview').textContent=p>0?fmt(p*q*1.25):'—';
+}
+function submitEntry(type){
+  const job=getJob(currentJobId);if(!job){toast('No active job');return;}
+  let entry={id:uid(),type,ts:Date.now()};
+  if(type==='labour'){
+    const onsite=parseFloat(document.getElementById('e-onsite').value)||0;
+    const drive=parseFloat(document.getElementById('e-drive').value)||0;
+    const mileage=parseFloat(document.getElementById('e-mileage').value)||0;
+    if(!onsite&&!drive&&!mileage){toast('Enter at least one value');return;}
+    entry={...entry,date:document.getElementById('e-date').value,onsite,drive,mileage,tech:document.getElementById('e-tech').value,note:document.getElementById('e-labour-note').value};
+    document.getElementById('e-onsite').value='';document.getElementById('e-drive').value='';document.getElementById('e-mileage').value='';document.getElementById('e-labour-note').value='';
+  }else if(type==='part'){
+    const cost=parseFloat(document.getElementById('e-part-cost').value)||0;
+    const desc=document.getElementById('e-part-desc').value.trim();
+    if(!desc&&!cost){toast('Enter description or cost');return;}
+    entry={...entry,desc,cost,store:document.getElementById('e-part-store').value,partNum:document.getElementById('e-part-num').value,by:document.getElementById('e-part-by').value};
+    document.getElementById('e-part-desc').value='';document.getElementById('e-part-cost').value='';document.getElementById('markup-preview').textContent='—';
+  }else if(type==='consumable'){
+    const sel=document.getElementById('e-cons-item');
+    const name=sel.value==='__custom__'?document.getElementById('e-cons-custom').value:sel.value;
+    const price=parseFloat(document.getElementById('e-cons-price').value)||0;
+    const qty=parseFloat(document.getElementById('e-cons-qty').value)||1;
+    if(!name||!price){toast('Select item and enter price');return;}
+    entry={...entry,name,price,qty};
+    sel.value='';document.getElementById('e-cons-price').value='';document.getElementById('e-cons-qty').value='1';document.getElementById('cons-preview').textContent='—';
+  }else if(type==='note'){
+    const text=document.getElementById('e-note-text').value.trim();
+    if(!text){toast('Enter a note');return;}
+    entry={...entry,text,cat:document.getElementById('e-note-cat').value,code:document.getElementById('e-note-code').value};
+    document.getElementById('e-note-text').value='';document.getElementById('e-note-code').value='';
+  }
+  job.entries.push(entry);scheduleSave();toast('Entry saved');
+  renderJobDetail();
+}
+function handlePhotos(event){
+  const job=getJob(currentJobId);if(!job)return;
+  const caption=document.getElementById('e-photo-caption').value;
+  const files=[...event.target.files];let loaded=0;
+  files.forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      job.entries.push({id:uid(),type:'photo',ts:Date.now(),data:e.target.result,caption});
+      if(++loaded===files.length){scheduleSave();toast(`${files.length} photo(s) added`);renderJobDetail();}
+    };reader.readAsDataURL(file);
+  });event.target.value='';
+}
+function deleteEntry(jobId,entryId){
+  const job=getJob(jobId);if(!job)return;
+  job.entries=job.entries.filter(e=>e.id!==entryId);
+  scheduleSave();renderJobDetail();
+}
+function openLightbox(entryId){
+  const job=getJob(currentJobId);if(!job)return;
+  const e=job.entries.find(x=>x.id===entryId);if(!e)return;
+  document.getElementById('lightbox-img').src=e.data;
+  openSheet('sheet-photo');
+}
+
+// ── SETTINGS ──
+function saveSettings(){
+  SETTINGS.webAppUrl=document.getElementById('cfg-url').value.trim();
+  saveLocal();toast('Settings saved');if(SETTINGS.webAppUrl)syncNow();
+}
+function disconnectDrive(){
+  if(!confirm('Disconnect from Drive?'))return;
+  SETTINGS.webAppUrl='';saveLocal();setSyncStatus('off','Offline');toast('Disconnected');
+}
+function copyScript(){
+  navigator.clipboard.writeText(document.getElementById('script-code').textContent).then(()=>toast('Script copied'));
+}
+function generateReportPrompt(jobId){
+  const job=getJob(jobId);if(!job)return;
+  const t=jobTotals(job);const cust=getCust(job.customerId);
+  const labour=job.entries.filter(e=>e.type==='labour');
+  const parts=job.entries.filter(e=>e.type==='part');
+  const cons=job.entries.filter(e=>e.type==='consumable');
+  const notes=job.entries.filter(e=>e.type==='note');
+  const txt=`Generate a professional Word service report for Patriot Equipment Repair (6498 Birds Landing Rd, Birds Landing, Ca 94512):
+
+CUSTOMER: ${job.customerName}${cust?'\nContact: '+cust.contact+' | Phone: '+cust.phone:''}
+EQUIPMENT: ${[job.year,job.make,job.model].filter(Boolean).join(' ')} | S/N: ${job.sn||'N/A'}
+DATES: ${job.startDate||'N/A'} | RATE: $${job.rate||135}/hr
+COMPLAINT: ${job.complaint||'Not specified'}
+
+NOTES:\n${notes.map(n=>`[${n.cat}${n.code?' '+n.code:''}] ${n.text}`).join('\n')||'None'}
+LABOUR:\n${labour.map(e=>`${e.date} ${e.tech}: ${e.onsite}h on-site, ${e.drive}h drive, $${e.mileage} mi. ${e.note||''}`).join('\n')||'None'}
+PARTS:\n${parts.map(e=>{const c=parseFloat(e.cost)||0;return`${e.desc} (${e.store||'?'}) cost $${c.toFixed(2)} billed $${(c*(1+getMarkup(c))).toFixed(2)}`}).join('\n')||'None'}
+CONSUMABLES:\n${cons.map(e=>`${e.name} x${e.qty} @ $${e.price} = $${((e.price||0)*(e.qty||1)*1.25).toFixed(2)} billed`).join('\n')||'None'}
+
+TOTAL: Labour $${t.labour.toFixed(2)} | Parts $${t.parts.toFixed(2)} | Cons $${t.cons.toFixed(2)} | TOTAL $${t.total.toFixed(2)}
+
+Please produce a polished .docx report with company header and cost summary table. Footer: "Please remit payment to: Patriot Equipment Repair, 6498 Birds Landing Rd, Birds Landing, Ca 94512"`;
+  navigator.clipboard.writeText(txt).then(()=>toast('Report data copied!'));
+}
+
+// ── TOAST ──
+function toast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ── SERVICE WORKER ──
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+
+// ── INIT ──
+loadLocal();
+document.getElementById('cfg-url').value=SETTINGS.webAppUrl||'';
+if(SETTINGS.webAppUrl){
+  setSyncStatus('busy','Loading...');
+  // Use JSONP for initial load to bypass CORS
+  const _initCb='_perInit_'+Date.now();
+  window[_initCb]=function(data){
+    try{if(data&&data.data&&data.data.length>2){const p=JSON.parse(data.data);if(p.jobs){STATE=p;saveLocal();}}}catch(e){}
+    setSyncStatus('ok','Synced');renderJobs();delete window[_initCb];
+    const s=document.getElementById('init-jsonp');if(s)s.remove();
+  };
+  const _initScript=document.createElement('script');
+  _initScript.id='init-jsonp';
+  _initScript.src=SETTINGS.webAppUrl+'?callback='+_initCb+'&t='+Date.now();
+  _initScript.onerror=()=>{setSyncStatus('off','Offline');renderJobs();delete window[_initCb];};
+  document.head.appendChild(_initScript);
+}else{renderJobs();}
+</script>
+</body>
+</html>
